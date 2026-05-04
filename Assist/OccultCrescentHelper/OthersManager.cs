@@ -6,8 +6,10 @@ using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Keys;
+using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Hooking;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
@@ -25,8 +27,8 @@ using OmenTools.OmenService;
 using OmenTools.Threading;
 using OmenTools.Threading.TaskHelper;
 using Action = Lumina.Excel.Sheets.Action;
-using ActionKind = FFXIVClientStructs.FFXIV.Client.UI.Agent.ActionKind;
 using AgentShowDelegate = OmenTools.Interop.Game.Models.Native.AgentShowDelegate;
+using DetailKind = FFXIVClientStructs.FFXIV.Client.Enums.DetailKind;
 using TerritoryIntendedUse = FFXIVClientStructs.FFXIV.Client.Enums.TerritoryIntendedUse;
 
 namespace DailyRoutines.ModulesPublic;
@@ -85,7 +87,7 @@ public partial class OccultCrescentHelper
             {
                 InternalName          = "DRMKDSupportJobChange",
                 Title                 = LuminaWrapper.GetAddonText(16658),
-                Size                  = new(500f, 490f),
+                Size                  = new(500f, 450f),
                 RememberClosePosition = true
             };
 
@@ -322,7 +324,7 @@ public partial class OccultCrescentHelper
             SupportJobChangeAddon.Toggle();
         }
 
-        private void OnZoneChanged(ushort zone)
+        private void OnZoneChanged(uint u)
         {
             if (GameState.TerritoryIntendedUse != TerritoryIntendedUse.OccultCrescent)
             {
@@ -437,7 +439,7 @@ public partial class OccultCrescentHelper
 
                         settingButton = new()
                         {
-                            Position    = new(41, 94),
+                            Position    = new(58, 160),
                             Size        = new(40f, 32f),
                             IsVisible   = true,
                             String      = new SeStringBuilder().AddIcon(BitmapFontIcon.ExclamationRectangle).Build().Encode(),
@@ -449,14 +451,14 @@ public partial class OccultCrescentHelper
                         settingButton.MultiplyColor            = new(0.39215687f);
                         settingButton.BackgroundNode.IsVisible = false;
 
-                        settingButton.AttachNode(MKDInfo->GetNodeById(20));
+                        settingButton.AttachNode(MKDInfo->GetNodeById(67));
                     }
 
                     if (MainModule.config.IsEnabledModifyInfoHUD && mapButton == null)
                     {
                         mapButton = new()
                         {
-                            Position    = new(40, 60),
+                            Position    = new(58, 128),
                             Size        = new(35f, 32f),
                             IsVisible   = true,
                             IconId      = 60561,
@@ -476,7 +478,7 @@ public partial class OccultCrescentHelper
                         mapButton.ImageNode.Position       -= new Vector2(10, 0);
                         mapButton.BackgroundNode.IsVisible =  false;
 
-                        mapButton.AttachNode(MKDInfo->GetNodeById(20));
+                        mapButton.AttachNode(MKDInfo->GetNodeById(67));
                     }
 
                     if (MainModule.config.IsEnabledModifyInfoHUD && supportJobChangeButton == null)
@@ -491,7 +493,7 @@ public partial class OccultCrescentHelper
                         };
                         supportJobChangeButton.BackgroundNode.IsVisible = false;
 
-                        supportJobChangeButton.AttachNode(MKDInfo->GetNodeById(20));
+                        supportJobChangeButton.AttachNode(MKDInfo->GetNodeById(29));
                     }
 
                     break;
@@ -512,7 +514,7 @@ public partial class OccultCrescentHelper
         {
             private const float LERP_SPEED = 0.2f;
 
-            public readonly Dictionary<uint, TextureButtonNode> SupportJobButtons = [];
+            private readonly Dictionary<uint, TextureButtonNode> supportJobButtons = [];
 
             private SimpleNineGridNode backgroundNode;
             private SimpleNineGridNode borderNode;
@@ -537,20 +539,15 @@ public partial class OccultCrescentHelper
             protected override void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValues)
             {
                 const int   MAX_ITEMS_PER_ROW = 5;
-                const float HEADER_HEIGHT      = 65f;
-                const float ROW_HEIGHT         = 53f;
-                const float ROW_SPACING        = 30f;
-                const float MIN_HEIGHT         = 490f;
+                const float HEADER_HEIGHT     = 65f;
+                const float ROW_HEIGHT        = 53f;
+                const float ROW_SPACING       = 30f;
+                const float MIN_HEIGHT        = 450f;
 
                 var supportJobs = new List<(MKDSupportJob Data, CrescentSupportJob Job)>();
 
-                foreach (var data in LuminaGetter.Get<MKDSupportJob>())
-                {
-                    var presetJob = CrescentSupportJob.AllJobs.FirstOrDefault(job => job.DataID == data.RowId);
-                    if (presetJob == null) continue;
-
-                    supportJobs.Add((data, presetJob));
-                }
+                foreach (var data in CrescentSupportJob.AllJobs)
+                    supportJobs.Add((data.GetData(), data));
 
                 supportJobs = supportJobs
                               .OrderBy
@@ -563,8 +560,8 @@ public partial class OccultCrescentHelper
                               .ThenBy(x => x.Data.RowId)
                               .ToList();
 
-                var rowCount     = Math.Max(1, (supportJobs.Count + MAX_ITEMS_PER_ROW - 1) / MAX_ITEMS_PER_ROW);
-                var windowHeight = Math.Max(MIN_HEIGHT, HEADER_HEIGHT + (ROW_HEIGHT * rowCount) + (ROW_SPACING * Math.Max(0, rowCount - 1)) + 12f);
+                var rowCount     = Math.Max(1,          (supportJobs.Count + MAX_ITEMS_PER_ROW - 1) / MAX_ITEMS_PER_ROW);
+                var windowHeight = Math.Max(MIN_HEIGHT, HEADER_HEIGHT + (ROW_HEIGHT * rowCount) + ROW_SPACING * Math.Max(0, rowCount - 1) + 12f);
 
                 PressedButtonOnce = false;
                 SetWindowSize(500f, windowHeight);
@@ -576,9 +573,6 @@ public partial class OccultCrescentHelper
                 windowNode.BackgroundNode.IsVisible  = false;
                 windowNode.BorderNode.Alpha          = 0f;
                 windowNode.TitleNode.IsVisible       = false;
-
-                SupportJobButtons.Clear();
-                jobActionNodes.Clear();
 
                 CreateWindowStyle();
 
@@ -666,9 +660,10 @@ public partial class OccultCrescentHelper
 
                 jobContainer = new VerticalListNode
                 {
-                    Position  = new(10, 0),
-                    Size      = new(CONTAINER_WIDTH, Size.Y - 12f),
-                    IsVisible = true
+                    Position    = new(0, 0),
+                    Size        = new(CONTAINER_WIDTH, Size.Y - 12f),
+                    IsVisible   = true,
+                    ItemSpacing = 5
                 };
 
                 jobContainer.AddDummy(65);
@@ -681,10 +676,11 @@ public partial class OccultCrescentHelper
                 {
                     var row = new HorizontalFlexNode
                     {
-                        Position       = new(10, 0),
+                        Position       = new(0, 0),
                         Size           = new(CONTAINER_WIDTH, ROW_HEIGHT),
                         IsVisible      = true,
-                        AlignmentFlags = FlexFlags.CenterHorizontally | FlexFlags.FitContentHeight
+                        AlignmentFlags = FlexFlags.CenterHorizontally | FlexFlags.FitContentHeight,
+                        ItemSpacing    = 10
                     };
                     rows.Add(row);
                 }
@@ -696,7 +692,7 @@ public partial class OccultCrescentHelper
                     var rowIndex = i / MAX_ITEMS_PER_ROW;
 
                     // 预览用的
-                    var jobActionContainer = new SupportJobActionListNode
+                    var jobActionContainer = new SupportJobActionListNode(this)
                     {
                         Position = new(500, 0),
                         Size     = new(200, backgroundNode.Height)
@@ -715,7 +711,7 @@ public partial class OccultCrescentHelper
 
                     var iconButton = new TextureButtonNode
                     {
-                        Size               = new(77f),
+                        Size               = new(53f),
                         IsVisible          = true,
                         IsEnabled          = true,
                         TextureCoordinates = new((int)(data.RowId % 5) * 28, (int)(data.RowId / 5) * 28),
@@ -731,7 +727,7 @@ public partial class OccultCrescentHelper
                                           ? unlockLink
                                           : LuminaWrapper.GetMKDSupportJobDescription(presetJob.DataID)
                     };
-                    SupportJobButtons[data.RowId] = iconButton;
+                    supportJobButtons[data.RowId] = iconButton;
 
                     if (presetJob.IsThisJob())
                         iconButton.AddColor = new(0.5882353f);
@@ -869,19 +865,6 @@ public partial class OccultCrescentHelper
                         );
                     }
 
-                    void ShowJobActions()
-                    {
-                        foreach (var (jobID, node) in jobActionNodes)
-                        {
-                            node.IsVisible = jobID == data.RowId;
-                            if (node is { IsVisible: true, BackgroundNode: null })
-                                node.LoadNodes(manager, presetJob, isFocused);
-                        }
-
-                        WindowNode.CollisionNode.Size = WindowNode.CollisionNode.Size with { X = 750 };
-                        WindowNode.Size               = WindowNode.Size with { X = 750 };
-                    }
-
                     iconButton.AddEvent
                     (
                         AtkEventType.MouseOver,
@@ -909,18 +892,29 @@ public partial class OccultCrescentHelper
 
                     iconButton.ImageNode.Size = new(53);
 
-                    var textNode = new TextNode
+                    var jobName = data.Name.ToString()
+                                      .Replace("Phantom", string.Empty)
+                                      .Replace("辅助",      string.Empty)
+                                      .Replace("サポート",    string.Empty)
+                                      .Replace("서포트",     string.Empty)
+                                      .Trim();
+                    using var nameBuilder = new RentedSeStringBuilder();
+                    var jobNameNode = new TextNode
                     {
-                        String        = new SeStringBuilder().AddUiGlow(32).Append($"{data.Name}").AddUiGlowOff().Build().Encode(),
+                        String = nameBuilder.Builder.PushEdgeColorType(32)
+                                            .Append(jobName)
+                                            .PopEdgeColorType()
+                                            .GetViewAsSpan(),
                         FontSize      = 12,
                         IsVisible     = true,
-                        Size          = new(53f, 24),
-                        Position      = new(0, 50),
+                        Size          = new(73, 24),
+                        Position      = new(-10, 48),
                         TextColor     = ColorHelper.GetColor(50),
                         AlignmentType = AlignmentType.Center,
                         TextFlags     = TextFlags.Glare
                     };
-                    textNode.AttachNode(iconButton);
+                    jobNameNode.AutoAdjustTextSize();
+                    jobNameNode.AttachNode(iconButton);
 
                     var imageFullLevelNode = new SimpleNineGridNode
                     {
@@ -954,6 +948,20 @@ public partial class OccultCrescentHelper
                     currentLevelNode.AttachNode(iconButton);
 
                     rows[rowIndex].AddNode(iconButton);
+                    continue;
+
+                    void ShowJobActions()
+                    {
+                        foreach (var (jobID, node) in jobActionNodes)
+                        {
+                            node.IsVisible = jobID == data.RowId;
+                            if (node is { IsVisible: true, BackgroundNode: null })
+                                node.LoadNodes(manager, presetJob, isFocused);
+                        }
+
+                        WindowNode.CollisionNode.Size = WindowNode.CollisionNode.Size with { X = 750 };
+                        WindowNode.Size               = WindowNode.Size with { X = 750 };
+                    }
                 }
 
                 for (var i = 0; i < rows.Count; i++)
@@ -1127,7 +1135,7 @@ public partial class OccultCrescentHelper
                 closeButtonNode.AttachNode(this);
             }
 
-            private class SupportJobActionListNode : SimpleComponentNode
+            private class SupportJobActionListNode(AddonDRMKDSupportJobChange addon) : SimpleComponentNode
             {
                 public SimpleNineGridNode      BackgroundNode       { get; private set; }
                 public SimpleNineGridNode      BorderNode           { get; private set; }
@@ -1138,7 +1146,7 @@ public partial class OccultCrescentHelper
                 public TextureButtonNode       SettingButtonNode    { get; private set; }
                 public CheckboxNode            IsRealActionNode     { get; private set; }
                 public List<SupportActionNode> ActionDragDropNodes  { get; private set; } = [];
-
+                
                 public void LoadNodes(OthersManager manager, CrescentSupportJob presetJob, bool isCurrentFoucused)
                 {
                     BackgroundNode = new SimpleNineGridNode
@@ -1212,7 +1220,15 @@ public partial class OccultCrescentHelper
                             Size      = new(40f)
                         };
 
-                        var dragDropNode = new SupportActionNode(presetJob, this, action.RowId, ActionDragDropNodes.Count,manager.MainModule.config.AddonIsDragRealAction)
+                        var dragDropNode = new SupportActionNode
+                        (
+                            addon,
+                            presetJob,
+                            this,
+                            action.RowId,
+                            ActionDragDropNodes.Count,
+                            manager.MainModule.config.AddonIsDragRealAction
+                        )
                         {
                             Size         = new(40f),
                             IsVisible    = true,
@@ -1250,7 +1266,9 @@ public partial class OccultCrescentHelper
 
                     foreach (var (trait, jobLevel) in presetJob.Traits)
                     {
-                        if (!LuminaGetter.TryGetRow<MKDTrait>(trait, out var traitRow)) continue;
+                        if (!LuminaGetter.TryGetRow<MKDTrait>(trait, out var traitRow) ||
+                            traitRow.Name.IsEmpty)
+                            continue;
 
                         var row = new HorizontalListNode
                         {
@@ -1270,7 +1288,16 @@ public partial class OccultCrescentHelper
                                 Int2 = (int)trait
                             },
                             IsClickable = false,
-                            OnRollOver  = node => node.ShowTooltip(AtkTooltipManager.AtkTooltipType.Action, ActionKind.MKDTrait),
+                            OnRollOver  = node =>
+                            {
+                                var tooltipArgs = new AtkTooltipManager.AtkTooltipArgs();
+
+                                tooltipArgs.ActionArgs.Flags = 1;
+                                tooltipArgs.ActionArgs.Kind  = DetailKind.MKDTrait;
+                                tooltipArgs.ActionArgs.Id    = (int)trait;
+
+                                AtkStage.Instance()->TooltipManager.ShowTooltip(AtkTooltipType.Action, (ushort)addon.AddonId, node, &tooltipArgs);
+                            },
                             OnRollOut   = node => node.HideTooltip()
                         };
 
@@ -1425,10 +1452,19 @@ public partial class OccultCrescentHelper
                         Action4 = 1 << 4
                     }
 
-                    public SupportActionNode(CrescentSupportJob job, SupportJobActionListNode list, uint actionID, int actionIndex, bool isRealAction = false)
+                    public SupportActionNode
+                    (
+                        AddonDRMKDSupportJobChange addon,
+                        CrescentSupportJob         job,
+                        SupportJobActionListNode   list,
+                        uint                       actionID,
+                        int                        actionIndex,
+                        bool                       isRealAction = false
+                    )
                     {
-                        Job  = job;
-                        List = list;
+                        Job   = job;
+                        List  = list;
+                        Addon = addon;
 
                         IsRealAction = isRealAction;
                         ActionIndex  = actionIndex;
@@ -1459,8 +1495,9 @@ public partial class OccultCrescentHelper
                         Toggle(IsRealAction);
                     }
 
-                    public CrescentSupportJob       Job  { get; private set; }
-                    public SupportJobActionListNode List { get; private set; }
+                    public CrescentSupportJob         Job   { get; private set; }
+                    public SupportJobActionListNode   List  { get; private set; }
+                    public AddonDRMKDSupportJobChange Addon { get; private set; }
 
                     public bool IsRealAction { get; private set; }
                     public int  ActionIndex  { get; private set; }
@@ -1487,8 +1524,16 @@ public partial class OccultCrescentHelper
                         };
 
                         OnRollOver = node =>
-                            node.ShowTooltip(AtkTooltipManager.AtkTooltipType.Action, IsRealAction ? ActionKind.Action : ActionKind.GeneralAction);
-                        OnRollOut = node => node.HideTooltip();
+                        {
+                            var tooltipArgs = new AtkTooltipManager.AtkTooltipArgs();
+
+                            tooltipArgs.ActionArgs.Flags = 1;
+                            tooltipArgs.ActionArgs.Kind  = isRealAction ? DetailKind.Action : DetailKind.GeneralAction;
+                            tooltipArgs.ActionArgs.Id    = IsRealAction ? (int)ActionID : 31 + ActionIndex;
+
+                            AtkStage.Instance()->TooltipManager.ShowTooltip(AtkTooltipType.Action, (ushort)Addon.AddonId, node, &tooltipArgs);
+                        };
+                        OnRollOut  = node => node.HideTooltip();
                         OnClicked = _ =>
                         {
                             UpdateActionInfo();

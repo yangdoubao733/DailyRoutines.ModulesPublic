@@ -28,8 +28,8 @@
       },
       "DalamudPackager": {
         "type": "Transitive",
-        "resolved": "14.0.2",
-        "contentHash": "dQJeq+8eyHzra4Cg5eZ/3LAeS3/UpvvLriYJGSncMK9LqJ7Q4B6jwcOsxo3PfxVd15xj+IzVFxkPqIBmPQu8/w=="
+        "resolved": "15.0.0",
+        "contentHash": "411vwC8/X8Z/sQ2TI6v3SvOn66xFPeOjFn3Zn+h0d3Ox2t1kFm66AhDvmx/qcMwVrR+Hidxj0dadpQ2dgyXMBQ=="
       },
       "GuerrillaNtp": {
         "type": "Transitive",
@@ -38,8 +38,8 @@
       },
       "MemoEngine": {
         "type": "Transitive",
-        "resolved": "1.0.7",
-        "contentHash": "0J49iBQX2wmqgQneSVWd4BV/kDMFCsFXhbngRlxtn6jN8ndRQruGeoNeZ2CIkViApc6YDDIuDlGAsrKMhklHyw==",
+        "resolved": "2.0.0",
+        "contentHash": "HwmRX7vrQ8Ohya0PG//6UOB8FqmkNJ5Ci5jBpc3xk85Yv+PVOT+SvqzUltL+7rE/Poo5oGqDRZDlNFOlXCOzlQ==",
         "dependencies": {
           "Newtonsoft.Json": "13.0.4"
         }
@@ -153,10 +153,10 @@
         "type": "Project",
         "dependencies": {
           "DailyRoutines.Common": "[1.0.0, )",
-          "DalamudPackager": "[14.0.2, )",
+          "DalamudPackager": "[15.0.0, )",
           "EdgeTTS": "[1.0.0, )",
           "KamiToolKit": "[1.0.0, )",
-          "MemoEngine": "[1.0.7, )",
+          "MemoEngine": "[2.0.0, )",
           "Microsoft.CodeAnalysis.CSharp": "[5.0.0, )",
           "OmenTools": "[1.0.0, )",
           "Otp.NET": "[1.4.1, )",
@@ -194,7 +194,6 @@
       "omentools": {
         "type": "Project",
         "dependencies": {
-          "DalamudPackager": "[14.0.2, )",
           "GuerrillaNtp": "[3.1.0, )",
           "TinyPinyin": "[1.1.0, )"
         }

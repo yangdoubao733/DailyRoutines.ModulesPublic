@@ -17,8 +17,6 @@ using OmenTools.Interop.Game.Lumina;
 using OmenTools.Interop.Game.Models;
 using OmenTools.OmenService;
 using OmenTools.Threading;
-using OmenTools.Threading.TaskHelper;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace DailyRoutines.ModulesPublic;
 
@@ -31,15 +29,9 @@ public unsafe class FCMemberManagePanel : ModuleBase
         Category    = ModuleCategory.UIOptimization
     };
 
-    private static readonly CompSig AgentFCReceiveEventInternalSig =
-        new("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 41 56 48 83 EC ?? 48 8B F1 48 8B DA");
-    private delegate nint AgentFCReceiveEventInternalDelegate(AgentFreeCompany* agent, nint a2);
-    private static   AgentFCReceiveEventInternalDelegate? AgentFCReceiveEventInternal;
-
-    // TODO: 等待 FFCS 更新 AgentFreeCompany.OpenContextMenuForMember
-    private static readonly CompSig OpenFCMemberContextMenuSig = new("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8D 4F 10 E8 ?? ?? ?? ?? 44 8B 43 20");
-    private delegate        void    OpenFCMemberContextMenuDelegate(AgentFreeCompany* agent, ushort index);
-    private static          OpenFCMemberContextMenuDelegate? OpenFCMemberContextMenu;
+    private static readonly CompSig AgentFCReceiveEventInternalSig = new("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 41 56 48 83 EC ?? 48 8B F1 48 8B DA");
+    private delegate        nint AgentFCReceiveEventInternalDelegate(AgentFreeCompany* agent, nint a2);
+    private static          AgentFCReceiveEventInternalDelegate? AgentFCReceiveEventInternal;
     
     private readonly Dictionary<ulong, FreeCompanyMemberInfo> characterDataDict = [];
     private readonly HashSet<FreeCompanyMemberInfo>           selectedMembers   = [];
@@ -55,9 +47,6 @@ public unsafe class FCMemberManagePanel : ModuleBase
     protected override void Init()
     {
         TaskHelper ??= new() { TimeoutMS = 3000 };
-
-        OpenFCMemberContextMenu ??=
-            Marshal.GetDelegateForFunctionPointer<OpenFCMemberContextMenuDelegate>(OpenFCMemberContextMenuSig.ScanText());
 
         AgentFCReceiveEventInternal ??=
             Marshal.GetDelegateForFunctionPointer<AgentFCReceiveEventInternalDelegate>(AgentFCReceiveEventInternalSig.ScanText());
@@ -413,7 +402,7 @@ public unsafe class FCMemberManagePanel : ModuleBase
 
     private void OpenContextMenuAndClick(int dataIndex, string menuText)
     {
-        OpenContextMenuByIndex(dataIndex);
+        AgentFreeCompany.Instance()->OpenContextMenuForMember((byte)dataIndex);
         TaskHelper.Enqueue
         (
             () =>
@@ -435,9 +424,6 @@ public unsafe class FCMemberManagePanel : ModuleBase
         );
     }
 
-    private static void OpenContextMenuByIndex(int dataIndex) => 
-        OpenFCMemberContextMenu(AgentFreeCompany.Instance(), (ushort)dataIndex);
-
     private void SwitchFreeCompanyMemberListPage(int page)
     {
         var memoryBlock = Marshal.AllocHGlobal(32);
@@ -446,11 +432,11 @@ public unsafe class FCMemberManagePanel : ModuleBase
         try
         {
             var value1 = (AtkValue*)memoryBlock;
-            value1->Type = ValueType.Int;
+            value1->Type = AtkValueType.Int;
             value1->SetInt(1);
 
             var value2 = (AtkValue*)(memoryBlock + 16);
-            value2->Type = ValueType.UInt;
+            value2->Type = AtkValueType.UInt;
             value2->SetUInt((uint)page);
 
             AgentFCReceiveEventInternal(agent, memoryBlock);

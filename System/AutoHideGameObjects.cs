@@ -177,13 +177,22 @@ public unsafe class AutoHideGameObjects : ModuleBase
             gameObject->ObjectKind != ObjectKind.Mount &&
             gameObject->OwnerId    != LocalPlayerState.EntityID)
             return true;
+        
+        // 战斗召唤物
+        if (config.HidePet                                                &&
+            index                                 <= 200                  &&
+            index % 2                             == 0                    &&
+            gameObject->ObjectKind                == ObjectKind.BattleNpc &&
+            (BattleNpcSubKind)gameObject->SubKind == BattleNpcSubKind.Pet &&
+            gameObject->OwnerId                   != LocalPlayerState.EntityID)
+            return true;
 
         // 陆行鸟
         if (config.HideChocobo                                                &&
             index                                 <= 200                      &&
             index % 2                             == 0                        &&
             gameObject->ObjectKind                == ObjectKind.BattleNpc     &&
-            (BattleNpcSubKind)gameObject->SubKind == BattleNpcSubKind.Chocobo &&
+            (BattleNpcSubKind)gameObject->SubKind == BattleNpcSubKind.Buddy   &&
             gameObject->OwnerId                   != LocalPlayerState.EntityID)
             return true;
 
@@ -271,7 +280,7 @@ public unsafe class AutoHideGameObjects : ModuleBase
         zoneUpdateCount = 0;
     }
 
-    private void OnZoneChanged(ushort zone)
+    private void OnZoneChanged(uint u)
     {
         zoneUpdateCount = 0;
         processedObjects.Clear();

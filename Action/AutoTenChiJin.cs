@@ -3,6 +3,7 @@ using DailyRoutines.Common.Module.Abstractions;
 using DailyRoutines.Common.Module.Enums;
 using DailyRoutines.Common.Module.Models;
 using DailyRoutines.Extensions;
+using Dalamud.Game.Gui;
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
@@ -16,7 +17,6 @@ using OmenTools.Interop.Game.Models;
 using OmenTools.Interop.Game.Models.Packets.Upstream;
 using OmenTools.OmenService;
 using Action = Lumina.Excel.Sheets.Action;
-using ActionKind = FFXIVClientStructs.FFXIV.Client.UI.Agent.ActionKind;
 using Control = FFXIVClientStructs.FFXIV.Client.Game.Control.Control;
 
 namespace DailyRoutines.ModulesPublic;
@@ -347,9 +347,8 @@ public unsafe class AutoTenChiJin : ModuleBase
                         Type = DragDropType.Action,
                         Int2 = (int)actionID
                     },
-                    IsClickable = false,
-                    OnRollOver  = node => node.ShowTooltip(AtkTooltipManager.AtkTooltipType.Action, ActionKind.Action),
-                    OnRollOut   = node => node.HideTooltip()
+                    IsClickable   = false,
+                    ActionTooltip = actionID
                 };
 
                 flexGrid.AddNode(dragDropNode);

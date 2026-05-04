@@ -45,7 +45,7 @@ public unsafe class AutoFateStart : ModuleBase
     protected override void Uninit() =>
         DService.Instance().ClientState.TerritoryChanged -= OnZoneChanged;
 
-    private void OnZoneChanged(ushort obj)
+    private void OnZoneChanged(uint u)
     {
         HandleSpawnNPCPacketHook.Disable();
 
@@ -77,7 +77,7 @@ public unsafe class AutoFateStart : ModuleBase
         if (FateManager.Instance()->GetCurrentFateId() == packet->Common.FateId)
             return;
 
-        if (DService.Instance().Fate.FirstOrDefault(x => x.FateId == packet->Common.FateId) is not { State: FateState.Preparation })
+        if (DService.Instance().Fate.FirstOrDefault(x => x.FateId == packet->Common.FateId) is not { State: FateState.Preparing })
             return;
 
         ExecuteCommandManager.Instance().ExecuteCommand(ExecuteCommandFlag.FateStart, row.RowId, targetID);

@@ -2,7 +2,6 @@ using DailyRoutines.Common.Module.Abstractions;
 using DailyRoutines.Common.Module.Enums;
 using DailyRoutines.Common.Module.Models;
 using DailyRoutines.Extensions;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
@@ -10,7 +9,6 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
 using OmenTools.Interop.Game.Helpers;
 using OmenTools.OmenService;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace DailyRoutines.ModulesPublic;
 
@@ -262,23 +260,7 @@ public unsafe class ScrollableTabs : ModuleBase
     private void UpdateInventory(AddonInventory* addon)
     {
         if (addon->TabIndex == NUM_INVENTORY_TABS - 1 && wheelState > 0)
-        {
-            var values = stackalloc AtkValue[3];
-
-            values[0].Ctor();
-            values[0].Type = ValueType.Int;
-            values[0].Int  = 22;
-
-            values[1].Ctor();
-            values[1].Type = ValueType.Int;
-            values[1].Int  = *(int*)((nint)addon + 0x228);
-
-            values[2].Ctor();
-            values[2].Type = ValueType.UInt;
-            values[2].UInt = 0;
-
-            addon->AtkUnitBase.FireCallback(3, values);
-        }
+            addon->AtkUnitBase.Callback(22, *(int*)((nint)addon + 0x228), 0);
         else
         {
             var tabIndex = GetTabIndex(addon->TabIndex, NUM_INVENTORY_TABS);
@@ -293,24 +275,7 @@ public unsafe class ScrollableTabs : ModuleBase
     private void UpdateInventoryEvent(AddonInventoryEvent* addon)
     {
         if (addon->TabIndex == 0 && wheelState < 0)
-        {
-            // inside Vf68, fn call before return with a2 being 2
-            var values = stackalloc AtkValue[3];
-
-            values[0].Ctor();
-            values[0].Type = ValueType.Int;
-            values[0].Int  = 22;
-
-            values[1].Ctor();
-            values[1].Type = ValueType.Int;
-            values[1].Int  = *(int*)((nint)addon + 0x280);
-
-            values[2].Ctor();
-            values[2].Type = ValueType.UInt;
-            values[2].UInt = 2;
-
-            addon->AtkUnitBase.FireCallback(3, values);
-        }
+            addon->AtkUnitBase.Callback(22, *(int*)((nint)addon + 0x228), 2);
         else
         {
             var numEnabledButtons = 0;
@@ -584,9 +549,6 @@ public unsafe class ScrollableTabs : ModuleBase
         if (nextButton == null || IsNext && !nextButton->IsEnabled)
             return;
 
-        // if (IsAddonOpen("MiragePrismPrismBoxFilter"))
-        // return;
-        // TODO 先这样写着，但可能有BUG
         if (MiragePrismPrismBoxFilter->IsAddonAndNodesReady())
             return;
 
